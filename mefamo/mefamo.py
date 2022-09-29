@@ -120,7 +120,9 @@ class Mefamo():
         # check if input is an image        
         if isinstance(self.input, str) and (self.input.lower().endswith(".jpg") or self.input.lower().endswith(".png")):
             image = cv2.imread(self.input)
-            self.file = True   
+            self.file = True
+        elif 'http' in self.input:
+            input = self.input + '/video'
         else:   
             input = self.input  
             try:
@@ -128,7 +130,7 @@ class Mefamo():
             except ValueError:
                 input = self.input  
 
-        if os.name == 'nt':
+        if os.name == 'nt' and 'http' not in input:
             # will improve webcam input startup on windows 
             cap = cv2.VideoCapture(input, cv2.CAP_DSHOW)   
         else:
@@ -172,6 +174,8 @@ class Mefamo():
         # To improve performance, optionally mark the image as not writeable to
         # pass by reference.
         image.flags.writeable = False
+        # Assume phone frame 1080 x 1920
+        image = cv2.resize(image, (480,270), interpolation = cv2.INTER_AREA)
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
         results = self.face_mesh.process(image)
 
