@@ -273,6 +273,7 @@ class BlendshapeCalculator():
 
     def _calculate_eye_landmarks(self):
         # Adapted from Kalidokit, https://github.com/yeemachine/kalidokit/blob/main/src/FaceSolver/calcEyes.ts
+        no_filter = False
         def get_eye_open_ration(points):
             eye_distance = self._eye_lid_distance(points)
             max_ratio = 0.285
@@ -290,28 +291,28 @@ class BlendshapeCalculator():
                 FaceBlendShape.EyeBlinkRight, eye_open_ratio_right)
 
         self._live_link_face.set_blendshape(
-            FaceBlendShape.EyeBlinkLeft, blink_left, True)
+            FaceBlendShape.EyeBlinkLeft, blink_left, no_filter)
         self._live_link_face.set_blendshape(
-            FaceBlendShape.EyeBlinkRight, blink_right, True)
+            FaceBlendShape.EyeBlinkRight, blink_right, no_filter)
 
         self._live_link_face.set_blendshape(FaceBlendShape.EyeWideLeft, self._remap_blendshape(
-            FaceBlendShape.EyeWideLeft, eye_open_ratio_left))
+            FaceBlendShape.EyeWideLeft, eye_open_ratio_left), no_filter)
         self._live_link_face.set_blendshape(FaceBlendShape.EyeWideRight, self._remap_blendshape(
-            FaceBlendShape.EyeWideRight, eye_open_ratio_right))
+            FaceBlendShape.EyeWideRight, eye_open_ratio_right), no_filter)
 
         squint_left = math.dist(
             self._get_landmark(self.blend_shape_config.CanonicalPpoints.squint_left[0]), 
             self._get_landmark(self.blend_shape_config.CanonicalPpoints.squint_left[1])
         )
         self._live_link_face.set_blendshape(
-            FaceBlendShape.EyeSquintLeft, 1 - self._remap_blendshape(FaceBlendShape.EyeSquintLeft, squint_left))
+            FaceBlendShape.EyeSquintLeft, 1 - self._remap_blendshape(FaceBlendShape.EyeSquintLeft, squint_left), no_filter)
   
         squint_right = math.dist(
             self._get_landmark(self.blend_shape_config.CanonicalPpoints.squint_right[0]), 
             self._get_landmark(self.blend_shape_config.CanonicalPpoints.squint_right[1])
         )
         self._live_link_face.set_blendshape(
-            FaceBlendShape.EyeSquintRight, 1 - self._remap_blendshape(FaceBlendShape.EyeSquintRight, squint_right))
+            FaceBlendShape.EyeSquintRight, 1 - self._remap_blendshape(FaceBlendShape.EyeSquintRight, squint_right), no_filter)
 
         right_brow_lower = (
             self._get_landmark(self.blend_shape_config.CanonicalPpoints.right_brow_lower[0]) +
@@ -328,21 +329,21 @@ class BlendshapeCalculator():
         left_brow_dist = math.dist(self._get_landmark(self.blend_shape_config.CanonicalPpoints.left_brow), left_brow_lower)
 
         self._live_link_face.set_blendshape(
-            FaceBlendShape.BrowDownLeft, 1 - self._remap_blendshape(FaceBlendShape.BrowDownLeft, left_brow_dist))
+            FaceBlendShape.BrowDownLeft, 1 - self._remap_blendshape(FaceBlendShape.BrowDownLeft, left_brow_dist), no_filter)
         self._live_link_face.set_blendshape(FaceBlendShape.BrowOuterUpLeft, self._remap_blendshape(
-            FaceBlendShape.BrowOuterUpLeft, left_brow_dist))
+            FaceBlendShape.BrowOuterUpLeft, left_brow_dist), no_filter)
 
         self._live_link_face.set_blendshape(
-            FaceBlendShape.BrowDownRight, 1 - self._remap_blendshape(FaceBlendShape.BrowDownRight, right_brow_dist))
+            FaceBlendShape.BrowDownRight, 1 - self._remap_blendshape(FaceBlendShape.BrowDownRight, right_brow_dist), no_filter)
         self._live_link_face.set_blendshape(FaceBlendShape.BrowOuterUpRight, self._remap_blendshape(
-            FaceBlendShape.BrowOuterUpRight, right_brow_dist))
+            FaceBlendShape.BrowOuterUpRight, right_brow_dist), no_filter)
 
         inner_brow = self._get_landmark(self.blend_shape_config.CanonicalPpoints.inner_brow)
         upper_nose = self._get_landmark(self.blend_shape_config.CanonicalPpoints.upper_nose)
         inner_brow_dist = math.dist(upper_nose, inner_brow)
 
         self._live_link_face.set_blendshape(FaceBlendShape.BrowInnerUp, self._remap_blendshape(
-            FaceBlendShape.BrowInnerUp, inner_brow_dist))
+            FaceBlendShape.BrowInnerUp, inner_brow_dist), no_filter)
 
         cheek_squint_left = math.dist(
             self._get_landmark(self.blend_shape_config.CanonicalPpoints.cheek_squint_left[0]), 
@@ -355,12 +356,12 @@ class BlendshapeCalculator():
         )
 
         self._live_link_face.set_blendshape(
-            FaceBlendShape.CheekSquintLeft, 1 - self._remap_blendshape(FaceBlendShape.CheekSquintLeft, cheek_squint_left))
+            FaceBlendShape.CheekSquintLeft, 1 - self._remap_blendshape(FaceBlendShape.CheekSquintLeft, cheek_squint_left), no_filter)
         self._live_link_face.set_blendshape(
-            FaceBlendShape.CheekSquintRight, 1 - self._remap_blendshape(FaceBlendShape.CheekSquintRight, cheek_squint_right))
+            FaceBlendShape.CheekSquintRight, 1 - self._remap_blendshape(FaceBlendShape.CheekSquintRight, cheek_squint_right), no_filter)
 
         # just use the same values for cheeksquint for nose sneer, mediapipe deosn't seem to have a separate value for nose sneer
         self._live_link_face.set_blendshape(
-            FaceBlendShape.NoseSneerLeft, self._live_link_face.get_blendshape(FaceBlendShape.CheekSquintLeft))
+            FaceBlendShape.NoseSneerLeft, self._live_link_face.get_blendshape(FaceBlendShape.CheekSquintLeft), no_filter)
         self._live_link_face.set_blendshape(
-            FaceBlendShape.NoseSneerRight, self._live_link_face.get_blendshape(FaceBlendShape.CheekSquintRight))
+            FaceBlendShape.NoseSneerRight, self._live_link_face.get_blendshape(FaceBlendShape.CheekSquintRight), no_filter)

@@ -67,7 +67,7 @@ def calculate_rotation(face_landmarks, pcf: PCF, image_shape):
 
     return pose_transform_mat, metric_landmarks, rotation_vector, translation_vector
 
-   
+
 class Mefamo():
     def __init__(self, input = 0, ip = '127.0.0.1', port = 11111, show_3d = False, hide_image = False, show_debug = False) -> None:
 
@@ -75,6 +75,7 @@ class Mefamo():
         self.show_image = not hide_image
         self.show_3d = show_3d
         self.show_debug = show_debug
+        self.filter_size = 2
 
         self.face_mesh = face_mesh.FaceMesh(
             max_num_faces=1,
@@ -82,13 +83,13 @@ class Mefamo():
             min_detection_confidence=0.5,
             min_tracking_confidence=0.5)
 
-        self.live_link_face = PyLiveLinkFace(fps = 30, filter_size = 4)
+        self.live_link_face = PyLiveLinkFace(fps = 30, filter_size = self.filter_size)
         self.blendshape_calulator = BlendshapeCalculator()
 
         self.ip = ip
         self.upd_port = port
         
-        self.image_height, self.image_width, channels = (480, 640, 3)
+        self.image_height, self.image_width, channels = (270, 480, 3)
 
         # pseudo camera internals
         focal_length = self.image_width
@@ -132,13 +133,14 @@ class Mefamo():
 
         if os.name == 'nt' and 'http' not in input:
             # will improve webcam input startup on windows 
-            cap = cv2.VideoCapture(input, cv2.CAP_DSHOW)   
+            cap = cv2.VideoCapture(input, cv2.CAP_DSHOW)
         else:
-            cap = cv2.VideoCapture(input)                
+            cap = cv2.VideoCapture(input)
 
         cap.set(cv2.CAP_PROP_FRAME_WIDTH, self.image_width)
         cap.set(cv2.CAP_PROP_FRAME_HEIGHT, self.image_height)
-        
+        cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)
+
         # run the network loop in a separate thread
         self.network_thread.start()
 
@@ -150,7 +152,7 @@ class Mefamo():
                     print("Ignoring empty camera frame.")
                     continue
                 if not self._process_image(image):
-                    break    
+                    break
             print("Video capture received no more frames.")                
             cap.release()
         
@@ -170,12 +172,12 @@ class Mefamo():
                         self.got_new_data = False
                 time.sleep(0.01)
 
-    def _process_image(self, image):   
+    def _process_image(self, image):
+        # Ensure image size and frame size are as expected
+        image = cv2.resize(image, (self.image_width, self.image_height),  interpolation=cv2.INTER_AREA)
         # To improve performance, optionally mark the image as not writeable to
         # pass by reference.
         image.flags.writeable = False
-        # Assume phone frame 1080 x 1920
-        image = cv2.resize(image, (480,270), interpolation = cv2.INTER_AREA)
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
         results = self.face_mesh.process(image)
 
@@ -196,22 +198,26 @@ class Mefamo():
                     image=image,
                     landmark_list=face_landmarks,
                     connections=face_mesh.FACEMESH_TESSELATION,
-                    landmark_drawing_spec=None,
-                    connection_drawing_spec=drawing_styles
-                    .get_default_face_mesh_tesselation_style())
+                    landmark_drawing_spec=self.drawing_spec,
+                    connection_drawing_spec=self.drawing_spec)
+                    # landmark_drawing_spec=None,
+                    # connection_drawing_spec=drawing_styles
+                    # .get_default_face_mesh_tesselation_style())
 
                 # draw the face contours
                 drawing_utils.draw_landmarks(
                     image=image,
                     landmark_list=face_landmarks,
                     connections=face_mesh.FACEMESH_CONTOURS,
-                    landmark_drawing_spec=None,
-                    connection_drawing_spec=drawing_styles
-                    .get_default_face_mesh_contours_style())
+                    landmark_drawing_spec=self.drawing_spec,
+                    connection_drawing_spec=self.drawing_spec)
+                    # landmark_drawing_spec=None,
+                    # connection_drawing_spec=drawing_styles
+                    # .get_default_face_mesh_contours_style())
             
-                 # draw iris points
-                image = Drawing.draw_landmark_point(face_landmarks.landmark[468], image, color = (0, 0, 255))
-                image = Drawing.draw_landmark_point(face_landmarks.landmark[473], image, color = (0, 255, 0))
+                #  # draw iris points
+                # image = Drawing.draw_landmark_point(face_landmarks.landmark[468], image, color = (0, 0, 255))
+                # image = Drawing.draw_landmark_point(face_landmarks.landmark[473], image, color = (0, 255, 0))
 
                 # calculate and set all the blendshapes                
                 self.blendshape_calulator.calculate_blendshapes(
