@@ -13,7 +13,7 @@ class BlendshapeCalculator():
     def __init__(self) -> None:
         self.blend_shape_config = BlendShapeConfig()        
         
-    def calculate_blendshapes(self, live_link_face: PyLiveLinkFace, metric_landmarks: np.ndarray, normalized_landmarks: RepeatedCompositeFieldContainer) -> None:
+    def calculate_blendshapes(self, live_link_face: PyLiveLinkFace, metric_landmarks: np.ndarray, normalized_landmarks: RepeatedCompositeFieldContainer, no_filter: bool=False) -> None:
         """ Calculate the blendshapes from the given landmarks. 
         
         This function calculates the blendshapes from the given landmarks and stores them in the given live_link_face.
@@ -36,8 +36,8 @@ class BlendshapeCalculator():
         self._metric_landmarks = metric_landmarks
         self._normalized_landmarks = normalized_landmarks
 
-        self._calculate_mouth_landmarks()
-        self._calculate_eye_landmarks()
+        self._calculate_mouth_landmarks(no_filter)
+        self._calculate_eye_landmarks(no_filter)
         
     def _get_landmark(self, index: int, use_normalized: bool = False) -> np.array:   
         """ Get the stored landmark from the given index.
@@ -82,7 +82,7 @@ class BlendshapeCalculator():
         min, max = self.blend_shape_config.config.get(index)        
         return self._remap(value, min, max)  
 
-    def _calculate_mouth_landmarks(self):
+    def _calculate_mouth_landmarks(self, no_filter = False):
         upper_lip = self._get_landmark(self.blend_shape_config.CanonicalPpoints.upper_lip)
         upper_outer_lip = self._get_landmark(self.blend_shape_config.CanonicalPpoints.upper_outer_lip)
         lower_lip = self._get_landmark(self.blend_shape_config.CanonicalPpoints.lower_lip)
@@ -102,15 +102,15 @@ class BlendshapeCalculator():
         head_height = math.dist(upper_head, lowest_chin)
         jaw_open_ratio = jaw_nose_dist / head_height
 
-        # self._live_link_face.set_blendshape(ARKitFace.MouthFrownRight, max(min(mouth_frown_right, 1), 0))
+        # self._live_link_face.set_blendshape(ARKitFace.MouthFrownRight, max(min(mouth_frown_right, 1), 0), no_filter)
         jaw_open = self._remap_blendshape(
             FaceBlendShape.JawOpen, jaw_open_ratio)
-        self._live_link_face.set_blendshape(FaceBlendShape.JawOpen, jaw_open)
+        self._live_link_face.set_blendshape(FaceBlendShape.JawOpen, jaw_open, no_filter)
 
         mouth_open = self._remap_blendshape(
-            FaceBlendShape.MouthClose, mouth_center_nose_dist - mouth_open_dist)
+            FaceBlendShape.MouthClose, mouth_open_dist)
         self._live_link_face.set_blendshape(
-            FaceBlendShape.MouthClose, mouth_open)
+            FaceBlendShape.MouthClose, mouth_open, no_filter)
 
         # TODO mouth open but teeth closed
         smile_left = upper_lip[1] - mouth_corner_left[1]
@@ -122,21 +122,21 @@ class BlendshapeCalculator():
             self._remap_blendshape(FaceBlendShape.MouthSmileRight, smile_right)
 
         self._live_link_face.set_blendshape(
-            FaceBlendShape.MouthSmileLeft, mouth_smile_left)
+            FaceBlendShape.MouthSmileLeft, mouth_smile_left, no_filter)
         self._live_link_face.set_blendshape(
-            FaceBlendShape.MouthSmileRight,  mouth_smile_right)
+            FaceBlendShape.MouthSmileRight,  mouth_smile_right, no_filter)
 
         self._live_link_face.set_blendshape(
-            FaceBlendShape.MouthDimpleLeft, mouth_smile_left / 2)
+            FaceBlendShape.MouthDimpleLeft, mouth_smile_left / 2, no_filter)
         self._live_link_face.set_blendshape(
-            FaceBlendShape.MouthDimpleRight, mouth_smile_right / 2)
+            FaceBlendShape.MouthDimpleRight, mouth_smile_right / 2, no_filter)
 
         mouth_frown_left = (mouth_corner_left - self._get_landmark(self.blend_shape_config.CanonicalPpoints.mouth_frown_left))[1]
         mouth_frown_right = (mouth_corner_right - self._get_landmark(self.blend_shape_config.CanonicalPpoints.mouth_frown_right))[1]
         self._live_link_face.set_blendshape(
-            FaceBlendShape.MouthFrownLeft, 1 - self._remap_blendshape(FaceBlendShape.MouthFrownLeft, mouth_frown_left))
+            FaceBlendShape.MouthFrownLeft, 1 - self._remap_blendshape(FaceBlendShape.MouthFrownLeft, mouth_frown_left), no_filter)
         self._live_link_face.set_blendshape(
-            FaceBlendShape.MouthFrownRight, 1 - self._remap_blendshape(FaceBlendShape.MouthFrownRight, mouth_frown_right))
+            FaceBlendShape.MouthFrownRight, 1 - self._remap_blendshape(FaceBlendShape.MouthFrownRight, mouth_frown_right), no_filter)
 
         # todo: also strech when laughing, need to be fixed
         mouth_left_stretch_point = self._get_landmark(self.blend_shape_config.CanonicalPpoints.mouth_left_stretch)
@@ -154,10 +154,10 @@ class BlendshapeCalculator():
             self._remap_blendshape(FaceBlendShape.MouthRight,
                                   mouth_center_right_stretch)
         self._live_link_face.set_blendshape(
-            FaceBlendShape.MouthLeft, mouth_left)
+            FaceBlendShape.MouthLeft, mouth_left, no_filter)
         self._live_link_face.set_blendshape(
-            FaceBlendShape.MouthRight, mouth_right)
-        # self._live_link_face.set_blendshape(ARKitFace.MouthRight, 1 - remap(mouth_left_right, -1.5, 0.0))
+            FaceBlendShape.MouthRight, mouth_right, no_filter)
+        # self._live_link_face.set_blendshape(ARKitFace.MouthRight, 1 - remap(mouth_left_right, -1.5, 0.0), no_filter)
 
         stretch_normal_left = -0.7 + \
             (0.42 * mouth_smile_left) + (0.36 * mouth_left)
@@ -170,9 +170,9 @@ class BlendshapeCalculator():
             (0.45 * mouth_smile_right) + (0.36 * mouth_right )
 
         self._live_link_face.set_blendshape(FaceBlendShape.MouthStretchLeft, self._remap(
-            mouth_left_stretch, stretch_normal_left, stretch_max_left))
+            mouth_left_stretch, stretch_normal_left, stretch_max_left), no_filter)
         self._live_link_face.set_blendshape(FaceBlendShape.MouthStretchRight, self._remap(
-            mouth_right_stretch, stretch_normal_right, stretch_max_right))
+            mouth_right_stretch, stretch_normal_right, stretch_max_right), no_filter)
 
         uppest_lip = self._get_landmark(0)
 
@@ -181,9 +181,9 @@ class BlendshapeCalculator():
 
         # TODO: this is not face rotation resistant
         self._live_link_face.set_blendshape(
-            FaceBlendShape.JawLeft, 1 - self._remap_blendshape(FaceBlendShape.JawLeft, jaw_right_left))
+            FaceBlendShape.JawLeft, 1 - self._remap_blendshape(FaceBlendShape.JawLeft, jaw_right_left), no_filter)
         self._live_link_face.set_blendshape(FaceBlendShape.JawRight, self._remap_blendshape(
-            FaceBlendShape.JawRight, jaw_right_left))
+            FaceBlendShape.JawRight, jaw_right_left), no_filter)
 
         lowest_lip = self._get_landmark(self.blend_shape_config.CanonicalPpoints.lowest_lip)
         under_lip = self._get_landmark(self.blend_shape_config.CanonicalPpoints.under_lip)
@@ -194,21 +194,21 @@ class BlendshapeCalculator():
         mouth_pucker = self._remap_blendshape(
             FaceBlendShape.MouthPucker, mouth_width)
         self._live_link_face.set_blendshape(
-            FaceBlendShape.MouthPucker, 1 - mouth_pucker)
+            FaceBlendShape.MouthPucker, 1 - mouth_pucker, no_filter)
         self._live_link_face.set_blendshape(
-            FaceBlendShape.MouthRollLower, 1 - self._remap_blendshape(FaceBlendShape.MouthRollLower, outer_lip_dist))
+            FaceBlendShape.MouthRollLower, 1 - self._remap_blendshape(FaceBlendShape.MouthRollLower, outer_lip_dist), no_filter)
         self._live_link_face.set_blendshape(
-            FaceBlendShape.MouthRollUpper, 1 - self._remap_blendshape(FaceBlendShape.MouthRollUpper, upper_lip_dist))
+            FaceBlendShape.MouthRollUpper, 1 - self._remap_blendshape(FaceBlendShape.MouthRollUpper, upper_lip_dist), no_filter)
 
         upper_lip_nose_dist = nose_tip[1] - uppest_lip[1]
         self._live_link_face.set_blendshape(
-            FaceBlendShape.MouthShrugUpper, 1 - self._remap_blendshape(FaceBlendShape.MouthShrugUpper, upper_lip_nose_dist))
+            FaceBlendShape.MouthShrugUpper, 1 - self._remap_blendshape(FaceBlendShape.MouthShrugUpper, upper_lip_nose_dist), no_filter)
 
         over_upper_lip = self._get_landmark(self.blend_shape_config.CanonicalPpoints.over_upper_lip)
         mouth_shrug_lower = math.dist(lowest_lip, over_upper_lip)
 
         self._live_link_face.set_blendshape(
-            FaceBlendShape.MouthShrugLower, 1 - self._remap_blendshape(FaceBlendShape.MouthShrugLower, mouth_shrug_lower))
+            FaceBlendShape.MouthShrugLower, 1 - self._remap_blendshape(FaceBlendShape.MouthShrugLower, mouth_shrug_lower), no_filter)
 
         lower_down_left = math.dist(self._get_landmark(
             424), self._get_landmark(319)) + mouth_open_dist * 0.5
@@ -216,16 +216,16 @@ class BlendshapeCalculator():
             204), self._get_landmark(89)) + mouth_open_dist * 0.5
 
         self._live_link_face.set_blendshape(FaceBlendShape.MouthLowerDownLeft, 1 -
-                                           self._remap_blendshape(FaceBlendShape.MouthLowerDownLeft, lower_down_left))
+                                           self._remap_blendshape(FaceBlendShape.MouthLowerDownLeft, lower_down_left), no_filter)
         self._live_link_face.set_blendshape(FaceBlendShape.MouthLowerDownRight, 1 -
-                                           self._remap_blendshape(FaceBlendShape.MouthLowerDownRight, lower_down_right))
+                                           self._remap_blendshape(FaceBlendShape.MouthLowerDownRight, lower_down_right), no_filter)
 
         # mouth funnel only can be seen if mouth pucker is really small
         if self._live_link_face.get_blendshape(FaceBlendShape.MouthPucker) < 0.5:
             self._live_link_face.set_blendshape(
-                FaceBlendShape.MouthFunnel, 1 - self._remap_blendshape(FaceBlendShape.MouthFunnel, mouth_width))
+                FaceBlendShape.MouthFunnel, 1 - self._remap_blendshape(FaceBlendShape.MouthFunnel, mouth_width), no_filter)
         else:
-            self._live_link_face.set_blendshape(FaceBlendShape.MouthFunnel, 0)
+            self._live_link_face.set_blendshape(FaceBlendShape.MouthFunnel, 0, no_filter)
 
         left_upper_press = math.dist(
             self._get_landmark(self.blend_shape_config.CanonicalPpoints.left_upper_press[0]), 
@@ -248,9 +248,9 @@ class BlendshapeCalculator():
         mouth_press_right = (right_upper_press + right_lower_press) / 2
 
         self._live_link_face.set_blendshape(
-            FaceBlendShape.MouthPressLeft, 1 - self._remap_blendshape(FaceBlendShape.MouthPressLeft, mouth_press_left))
+            FaceBlendShape.MouthPressLeft, 1 - self._remap_blendshape(FaceBlendShape.MouthPressLeft, mouth_press_left), no_filter)
         self._live_link_face.set_blendshape(
-            FaceBlendShape.MouthPressRight, 1 - self._remap_blendshape(FaceBlendShape.MouthPressRight, mouth_press_right))
+            FaceBlendShape.MouthPressRight, 1 - self._remap_blendshape(FaceBlendShape.MouthPressRight, mouth_press_right), no_filter)
 
         # really hard to do this, mediapipe is not really moving here
         # right_under_eye = self._get_landmark(350)
@@ -271,9 +271,8 @@ class BlendshapeCalculator():
         ratio = eye_lid_avg / eye_width
         return ratio
 
-    def _calculate_eye_landmarks(self):
+    def _calculate_eye_landmarks(self, no_filter = False):
         # Adapted from Kalidokit, https://github.com/yeemachine/kalidokit/blob/main/src/FaceSolver/calcEyes.ts
-        no_filter = False
         def get_eye_open_ration(points):
             eye_distance = self._eye_lid_distance(points)
             max_ratio = 0.285

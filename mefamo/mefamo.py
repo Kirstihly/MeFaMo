@@ -75,7 +75,8 @@ class Mefamo():
         self.show_image = not hide_image
         self.show_3d = show_3d
         self.show_debug = show_debug
-        self.filter_size = 2
+        self.filter_size = 4
+        self.no_filter = True
 
         self.face_mesh = face_mesh.FaceMesh(
             max_num_faces=1,
@@ -83,7 +84,7 @@ class Mefamo():
             min_detection_confidence=0.5,
             min_tracking_confidence=0.5)
 
-        self.live_link_face = PyLiveLinkFace(fps = 30, filter_size = self.filter_size)
+        self.live_link_face = PyLiveLinkFace(name = 'Argos', fps = 30, filter_size = self.filter_size)
         self.blendshape_calulator = BlendshapeCalculator()
 
         self.ip = ip
@@ -117,6 +118,7 @@ class Mefamo():
     def start(self):        
         cap = None
         image = None
+        success = False
 
         # check if input is an image        
         if isinstance(self.input, str) and (self.input.lower().endswith(".jpg") or self.input.lower().endswith(".png")):
@@ -131,22 +133,35 @@ class Mefamo():
             except ValueError:
                 input = self.input  
 
-        if os.name == 'nt' and 'http' not in input:
-            # will improve webcam input startup on windows 
-            cap = cv2.VideoCapture(input, cv2.CAP_DSHOW)
-        else:
-            cap = cv2.VideoCapture(input)
+        def cap_restart(cap):
+            if cap is not None:
+                cap.release()
 
-        cap.set(cv2.CAP_PROP_FRAME_WIDTH, self.image_width)
-        cap.set(cv2.CAP_PROP_FRAME_HEIGHT, self.image_height)
-        cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)
+            if os.name == 'nt' and 'http' not in input:
+                # will improve webcam input startup on windows
+                cap = cv2.VideoCapture(input, cv2.CAP_DSHOW)
+            else:
+                cap = cv2.VideoCapture(input)
+
+            cap.set(cv2.CAP_PROP_FRAME_WIDTH, self.image_width)
+            cap.set(cv2.CAP_PROP_FRAME_HEIGHT, self.image_height)
+            cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)
+            return cap
+
+        cap = cap_restart(cap)
 
         # run the network loop in a separate thread
         self.network_thread.start()
 
+        processed = 0
         if cap is not None:
             # for camera and videos
             while cap.isOpened():
+                if success:
+                    processed += 1
+                if processed > 200:
+                    cap = cap_restart(cap)
+
                 success, image = cap.read()
                 if not success:
                     print("Ignoring empty camera frame.")
