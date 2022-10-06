@@ -108,13 +108,13 @@ class BlendshapeCalculator():
         self._live_link_face.set_blendshape(FaceBlendShape.JawOpen, jaw_open, no_filter)
 
         mouth_open = self._remap_blendshape(
-            FaceBlendShape.MouthClose, mouth_open_dist)
+            FaceBlendShape.MouthClose, mouth_center_nose_dist - mouth_open_dist)
         self._live_link_face.set_blendshape(
             FaceBlendShape.MouthClose, mouth_open, no_filter)
 
         # TODO mouth open but teeth closed
-        smile_left = upper_lip[1] - mouth_corner_left[1]
-        smile_right = upper_lip[1] - mouth_corner_right[1]
+        smile_left = mouth_center[1] - mouth_corner_left[1]
+        smile_right = mouth_center[1] - mouth_corner_right[1]
 
         mouth_smile_left = 1 - \
             self._remap_blendshape(FaceBlendShape.MouthSmileLeft, smile_left)
