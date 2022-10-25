@@ -276,7 +276,7 @@ class BlendshapeCalculator():
         def get_eye_open_ration(points):
             eye_distance = self._eye_lid_distance(points)
             max_ratio = 0.285
-            ratio = np.clip(eye_distance / max_ratio, 0, 2)
+            ratio = np.clip(eye_distance / max_ratio * 3, 0, 1)
             return ratio
 
         eye_open_ratio_left = get_eye_open_ration(self.blend_shape_config.CanonicalPpoints.eye_left)
