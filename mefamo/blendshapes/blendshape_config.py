@@ -44,7 +44,7 @@ class BlendShapeConfig:
 
         # blend shape type, min and max value
         config = {
-            FaceBlendShape.EyeBlinkLeft : (0.0, 1.0),
+            FaceBlendShape.EyeBlinkLeft : (0.40, 0.70),
             # FaceBlendShape.EyeLookDownLeft : (-0.4, 0.0),
             # FaceBlendShape.EyeLookInLeft : (-0.4, 0.0),
             # FaceBlendShape.EyeLookOutLeft : (-0.4, 0.0),
@@ -62,7 +62,7 @@ class BlendShapeConfig:
             FaceBlendShape.JawLeft : (-0.4, 0.0),
             FaceBlendShape.JawRight : (0.0, 0.4),
             FaceBlendShape.JawOpen : (0.50, 0.55),
-            FaceBlendShape.MouthClose : (0.0, 1.0),
+            FaceBlendShape.MouthClose : (2.0, 3.3),
             FaceBlendShape.MouthFunnel : (4.0, 4.8),
             FaceBlendShape.MouthPucker : (3.46, 4.92),
             FaceBlendShape.MouthLeft : (-3.4, -2.3),

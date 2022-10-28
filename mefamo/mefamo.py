@@ -69,14 +69,17 @@ def calculate_rotation(face_landmarks, pcf: PCF, image_shape):
 
 
 class Mefamo():
-    def __init__(self, input = 0, ip = '127.0.0.1', port = 11111, show_3d = False, hide_image = False, show_debug = False) -> None:
+    def __init__(self, input = 0, ip = '127.0.0.1', port = 11111, show_3d = False, hide_image = False, show_debug = False, filter_size = 2) -> None:
 
         self.input = input
         self.show_image = not hide_image
         self.show_3d = show_3d
         self.show_debug = show_debug
-        self.filter_size = 4
-        self.no_filter = True
+        self.filter_size = int(filter_size)
+        if self.filter_size < 1:
+            self.no_filter = True
+        else:
+            self.no_filter = False
 
         self.face_mesh = face_mesh.FaceMesh(
             max_num_faces=1,
@@ -137,11 +140,7 @@ class Mefamo():
             if cap is not None:
                 cap.release()
 
-            if os.name == 'nt' and 'http' not in input:
-                # will improve webcam input startup on windows
-                cap = cv2.VideoCapture(input, cv2.CAP_DSHOW)
-            else:
-                cap = cv2.VideoCapture(input)
+            cap = cv2.VideoCapture(input)
 
             cap.set(cv2.CAP_PROP_FRAME_WIDTH, self.image_width)
             cap.set(cv2.CAP_PROP_FRAME_HEIGHT, self.image_height)
@@ -236,7 +235,7 @@ class Mefamo():
 
                 # calculate and set all the blendshapes                
                 self.blendshape_calulator.calculate_blendshapes(
-                    self.live_link_face, metric_landmarks[0:3].T, face_landmarks.landmark)
+                    self.live_link_face, metric_landmarks[0:3].T, face_landmarks.landmark, self.no_filter)
 
                 # calculate the head rotation out of the pose matrix
                 eulerAngles = transforms3d.euler.mat2euler(pose_transform_mat)
